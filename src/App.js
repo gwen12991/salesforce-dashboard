@@ -234,11 +234,23 @@ const SalesforceDashboard = () => {
     if (!apiUrl) return;
     
     try {
-      const statsResponse = await fetch(`${apiUrl}?action=getStats`);
+      // Direct fetch attempt first
+      let statsResponse;
+      let settingsResponse;
+      
+      try {
+        statsResponse = await fetch(`${apiUrl}?action=getStats`);
+        settingsResponse = await fetch(`${apiUrl}?action=getSettings`);
+      } catch (corsError) {
+        // If CORS fails, try with a proxy
+        const proxyUrl = 'https://corsproxy.io/?';
+        statsResponse = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl + '?action=getStats')}`);
+        settingsResponse = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl + '?action=getSettings')}`);
+      }
+      
       const statsData = await statsResponse.json();
       setStats(statsData);
       
-      const settingsResponse = await fetch(`${apiUrl}?action=getSettings`);
       const settingsData = await settingsResponse.json();
       
       setVacationMode(settingsData.vacationMode);
@@ -258,10 +270,20 @@ const SalesforceDashboard = () => {
     if (!apiUrl) return;
     
     try {
-      await fetch(`${apiUrl}?action=updateSettings`, {
-        method: 'POST',
-        body: JSON.stringify(newSettings)
-      });
+      let response;
+      
+      try {
+        response = await fetch(`${apiUrl}?action=updateSettings`, {
+          method: 'POST',
+          body: JSON.stringify(newSettings)
+        });
+      } catch (corsError) {
+        const proxyUrl = 'https://corsproxy.io/?';
+        response = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl + '?action=updateSettings')}`, {
+          method: 'POST',
+          body: JSON.stringify(newSettings)
+        });
+      }
     } catch (error) {
       console.error('Error saving settings:', error);
     }
@@ -301,10 +323,20 @@ const SalesforceDashboard = () => {
     setIsProcessing(true);
     
     try {
-      const response = await fetch(`${apiUrl}?action=processNow`, {
-        method: 'POST',
-        body: JSON.stringify({ recordsPerDay })
-      });
+      let response;
+      
+      try {
+        response = await fetch(`${apiUrl}?action=processNow`, {
+          method: 'POST',
+          body: JSON.stringify({ recordsPerDay })
+        });
+      } catch (corsError) {
+        const proxyUrl = 'https://corsproxy.io/?';
+        response = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl + '?action=processNow')}`, {
+          method: 'POST',
+          body: JSON.stringify({ recordsPerDay })
+        });
+      }
       
       const result = await response.json();
       
@@ -327,10 +359,20 @@ const SalesforceDashboard = () => {
     }
     
     try {
-      const response = await fetch(`${apiUrl}?action=resetAll`, {
-        method: 'POST',
-        body: JSON.stringify({})
-      });
+      let response;
+      
+      try {
+        response = await fetch(`${apiUrl}?action=resetAll`, {
+          method: 'POST',
+          body: JSON.stringify({})
+        });
+      } catch (corsError) {
+        const proxyUrl = 'https://corsproxy.io/?';
+        response = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl + '?action=resetAll')}`, {
+          method: 'POST',
+          body: JSON.stringify({})
+        });
+      }
       
       const result = await response.json();
       

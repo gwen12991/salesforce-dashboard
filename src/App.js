@@ -1,8 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Power, Calendar, Clock, RefreshCw, Play, Pause, Settings, BarChart3, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, RefreshCw, Play, BarChart3, CheckCircle, AlertCircle, Link } from 'lucide-react';
 
 const SalesforceDashboard = () => {
+  const [apiUrl, setApiUrl] = useState(localStorage.getItem('apiUrl') || '');
+  const [isConnected, setIsConnected] = useState(false);
+  const [showSetup, setShowSetup] = useState(!localStorage.getItem('apiUrl'));
+  
   const [vacationMode, setVacationMode] = useState(false);
   const [skipWeekends, setSkipWeekends] = useState(true);
   const [skipHolidays, setSkipHolidays] = useState(true);
@@ -10,161 +14,485 @@ const SalesforceDashboard = () => {
   const [recordsPerDay, setRecordsPerDay] = useState(150);
   const [isProcessing, setIsProcessing] = useState(false);
   const [stats, setStats] = useState({
-    total: 2327,
+    total: 0,
     processed: 0,
-    remaining: 2327,
+    remaining: 0,
     lastRun: null,
     nextRun: null,
     processedToday: 0
   });
 
-  // Simulated stats update
-  useEffect(() => {
-    const updateStats = () => {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
+  const styles = {
+    container: {
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #EFF6FF 0%, #E0E7FF 100%)',
+      padding: '16px',
+      paddingBottom: '80px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    },
+    maxWidth: {
+      maxWidth: '896px',
+      margin: '0 auto'
+    },
+    header: {
+      textAlign: 'center',
+      marginBottom: '32px',
+      paddingTop: '24px'
+    },
+    title: {
+      fontSize: '30px',
+      fontWeight: 'bold',
+      color: '#1F2937',
+      marginBottom: '8px'
+    },
+    subtitle: {
+      color: '#6B7280',
+      fontSize: '14px'
+    },
+    card: {
+      background: 'white',
+      borderRadius: '12px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      padding: '16px',
+      marginBottom: '16px'
+    },
+    statCard: {
+      background: 'white',
+      borderRadius: '12px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      padding: '16px',
+      marginBottom: '16px',
+      borderLeft: '4px solid'
+    },
+    statLabel: {
+      fontSize: '14px',
+      color: '#6B7280',
+      marginBottom: '4px'
+    },
+    statValue: {
+      fontSize: '32px',
+      fontWeight: 'bold',
+      color: '#1F2937'
+    },
+    grid2: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '16px',
+      marginBottom: '24px'
+    },
+    toggle: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      background: 'white',
+      borderRadius: '12px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      padding: '16px',
+      marginBottom: '12px'
+    },
+    toggleLabel: {
+      fontWeight: '500',
+      color: '#1F2937',
+      fontSize: '15px'
+    },
+    toggleDesc: {
+      fontSize: '13px',
+      color: '#6B7280',
+      marginTop: '4px'
+    },
+    toggleSwitch: {
+      position: 'relative',
+      display: 'inline-flex',
+      height: '32px',
+      width: '56px',
+      alignItems: 'center',
+      borderRadius: '16px',
+      cursor: 'pointer',
+      transition: 'background-color 0.3s',
+      border: 'none'
+    },
+    toggleCircle: {
+      display: 'inline-block',
+      height: '24px',
+      width: '24px',
+      borderRadius: '50%',
+      background: 'white',
+      transition: 'transform 0.3s',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+    },
+    button: {
+      width: '100%',
+      padding: '16px',
+      borderRadius: '12px',
+      fontWeight: '600',
+      fontSize: '16px',
+      border: 'none',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      transition: 'all 0.2s',
+      marginBottom: '12px'
+    },
+    buttonPrimary: {
+      background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 100%)',
+      color: 'white',
+      boxShadow: '0 4px 6px rgba(37, 99, 235, 0.3)'
+    },
+    buttonSecondary: {
+      background: 'white',
+      color: '#374151',
+      border: '2px solid #D1D5DB'
+    },
+    buttonDisabled: {
+      background: '#9CA3AF',
+      cursor: 'not-allowed',
+      boxShadow: 'none'
+    },
+    progressBar: {
+      width: '100%',
+      height: '12px',
+      background: '#E5E7EB',
+      borderRadius: '6px',
+      overflow: 'hidden'
+    },
+    progressFill: {
+      height: '100%',
+      background: 'linear-gradient(90deg, #3B82F6 0%, #4F46E5 100%)',
+      transition: 'width 0.5s ease',
+      borderRadius: '6px'
+    },
+    alert: {
+      background: '#FEF3C7',
+      borderLeft: '4px solid #F59E0B',
+      padding: '16px',
+      borderRadius: '12px',
+      marginBottom: '24px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px'
+    },
+    alertText: {
+      color: '#92400E',
+      fontWeight: '500',
+      fontSize: '14px'
+    },
+    connectionBadge: {
+      padding: '12px',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      marginBottom: '24px',
+      fontSize: '14px',
+      fontWeight: '500'
+    },
+    setupContainer: {
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #EFF6FF 0%, #E0E7FF 100%)',
+      padding: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    setupCard: {
+      maxWidth: '448px',
+      width: '100%',
+      background: 'white',
+      borderRadius: '16px',
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+      padding: '32px'
+    },
+    input: {
+      width: '100%',
+      padding: '12px 16px',
+      border: '1px solid #D1D5DB',
+      borderRadius: '8px',
+      fontSize: '14px',
+      marginBottom: '16px',
+      boxSizing: 'border-box'
+    },
+    infoBox: {
+      marginTop: '24px',
+      padding: '16px',
+      background: '#EFF6FF',
+      borderRadius: '8px'
+    },
+    slider: {
+      width: '100%',
+      height: '8px',
+      borderRadius: '4px',
+      background: '#E5E7EB',
+      outline: 'none',
+      appearance: 'none',
+      WebkitAppearance: 'none'
+    }
+  };
 
-      setStats(prev => ({
-        ...prev,
-        nextRun: autoRun && !vacationMode ? tomorrow.toLocaleString() : 'Paused'
-      }));
-    };
-    updateStats();
-  }, [autoRun, vacationMode]);
+  const loadData = async () => {
+    if (!apiUrl) return;
+    
+    try {
+      const statsResponse = await fetch(`${apiUrl}?action=getStats`);
+      const statsData = await statsResponse.json();
+      setStats(statsData);
+      
+      const settingsResponse = await fetch(`${apiUrl}?action=getSettings`);
+      const settingsData = await settingsResponse.json();
+      
+      setVacationMode(settingsData.vacationMode);
+      setSkipWeekends(settingsData.skipWeekends);
+      setSkipHolidays(settingsData.skipHolidays);
+      setAutoRun(settingsData.autoRun);
+      setRecordsPerDay(settingsData.recordsPerDay);
+      
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setIsConnected(false);
+    }
+  };
+
+  const saveSettings = async (newSettings) => {
+    if (!apiUrl) return;
+    
+    try {
+      await fetch(`${apiUrl}?action=updateSettings`, {
+        method: 'POST',
+        body: JSON.stringify(newSettings)
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (apiUrl) {
+      loadData();
+      const interval = setInterval(loadData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [apiUrl]);
+
+  useEffect(() => {
+    if (isConnected) {
+      saveSettings({
+        vacationMode,
+        skipWeekends,
+        skipHolidays,
+        autoRun,
+        recordsPerDay
+      });
+    }
+  }, [vacationMode, skipWeekends, skipHolidays, autoRun, recordsPerDay]);
+
+  const handleConnect = () => {
+    if (apiUrl.trim()) {
+      localStorage.setItem('apiUrl', apiUrl.trim());
+      setShowSetup(false);
+      loadData();
+    }
+  };
 
   const handleProcessNow = async () => {
+    if (!apiUrl) return;
+    
     setIsProcessing(true);
     
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setStats(prev => ({
-      ...prev,
-      processed: prev.processed + recordsPerDay,
-      remaining: Math.max(0, prev.remaining - recordsPerDay),
-      processedToday: recordsPerDay,
-      lastRun: new Date().toLocaleString()
-    }));
+    try {
+      const response = await fetch(`${apiUrl}?action=processNow`, {
+        method: 'POST',
+        body: JSON.stringify({ recordsPerDay })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        await loadData();
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Error processing:', error);
+      alert('Error processing records. Check console for details.');
+    }
     
     setIsProcessing(false);
   };
 
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset all records? This will start processing from the beginning.')) {
-      setStats({
-        total: 2327,
-        processed: 0,
-        remaining: 2327,
-        lastRun: null,
-        nextRun: stats.nextRun,
-        processedToday: 0
+  const handleReset = async () => {
+    if (!window.confirm('Are you sure you want to reset all records? This will start processing from the beginning.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${apiUrl}?action=resetAll`, {
+        method: 'POST',
+        body: JSON.stringify({})
       });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(result.message);
+        await loadData();
+      }
+    } catch (error) {
+      console.error('Error resetting:', error);
+      alert('Error resetting records. Check console for details.');
     }
   };
 
   const StatCard = ({ icon: Icon, label, value, color }) => (
-    <div className="bg-white rounded-lg shadow-md p-4 border-l-4" style={{ borderLeftColor: color }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">{label}</p>
-          <p className="text-2xl font-bold text-gray-800">{value}</p>
-        </div>
-        <Icon className="w-8 h-8 opacity-20" style={{ color }} />
-      </div>
+    <div style={{...styles.statCard, borderLeftColor: color}}>
+      <p style={styles.statLabel}>{label}</p>
+      <p style={styles.statValue}>{value}</p>
     </div>
   );
 
   const Toggle = ({ label, checked, onChange, description }) => (
-    <div className="bg-white rounded-lg shadow-md p-4 flex items-center justify-between">
-      <div className="flex-1">
-        <p className="font-medium text-gray-800">{label}</p>
-        {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
+    <div style={styles.toggle}>
+      <div style={{flex: 1}}>
+        <p style={styles.toggleLabel}>{label}</p>
+        {description && <p style={styles.toggleDesc}>{description}</p>}
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-          checked ? 'bg-blue-600' : 'bg-gray-300'
-        }`}
+        style={{
+          ...styles.toggleSwitch,
+          background: checked ? '#2563EB' : '#D1D5DB'
+        }}
       >
-        <span
-          className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-            checked ? 'translate-x-7' : 'translate-x-1'
-          }`}
-        />
+        <span style={{
+          ...styles.toggleCircle,
+          transform: checked ? 'translateX(28px)' : 'translateX(4px)'
+        }} />
       </button>
     </div>
   );
 
-  const progressPercent = Math.round((stats.processed / stats.total) * 100);
+  if (showSetup) {
+    return (
+      <div style={styles.setupContainer}>
+        <div style={styles.setupCard}>
+          <div style={{textAlign: 'center', marginBottom: '24px'}}>
+            <Link style={{width: '64px', height: '64px', margin: '0 auto 16px', color: '#2563EB'}} />
+            <h2 style={{fontSize: '24px', fontWeight: 'bold', color: '#1F2937', marginBottom: '8px'}}>Connect to Google Sheets</h2>
+            <p style={{color: '#6B7280', fontSize: '14px'}}>Enter your Web App URL to get started</p>
+          </div>
+          
+          <div>
+            <label style={{display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px'}}>
+              Web App URL
+            </label>
+            <input
+              type="text"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              placeholder="https://script.google.com/macros/s/..."
+              style={styles.input}
+            />
+            
+            <button
+              onClick={handleConnect}
+              style={{...styles.button, ...styles.buttonPrimary}}
+            >
+              Connect
+            </button>
+            
+            <div style={styles.infoBox}>
+              <p style={{fontSize: '14px', color: '#374151', fontWeight: '500', marginBottom: '8px'}}>📋 Setup Instructions:</p>
+              <ol style={{fontSize: '13px', color: '#6B7280', paddingLeft: '20px', margin: 0, lineHeight: '1.6'}}>
+                <li>Open your Google Sheet</li>
+                <li>Go to Extensions → Apps Script</li>
+                <li>Paste the backend code</li>
+                <li>Click Deploy → New deployment</li>
+                <li>Choose "Web app"</li>
+                <li>Set "Execute as: Me"</li>
+                <li>Set "Who has access: Anyone"</li>
+                <li>Copy the URL and paste it above</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const progressPercent = stats.total > 0 ? Math.round((stats.processed / stats.total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 pb-20">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8 pt-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Salesforce Task Queue</h1>
-          <p className="text-gray-600">Automated Email Task Management</p>
+    <div style={styles.container}>
+      <div style={styles.maxWidth}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Salesforce Task Queue</h1>
+          <p style={styles.subtitle}>Automated Email Task Management</p>
         </div>
 
-        {/* Status Banner */}
+        <div style={{
+          ...styles.connectionBadge,
+          background: isConnected ? '#D1FAE5' : '#FEE2E2',
+          color: isConnected ? '#065F46' : '#991B1B'
+        }}>
+          <div style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: isConnected ? '#10B981' : '#EF4444'
+          }} />
+          <span>{isConnected ? 'Connected to Google Sheets' : 'Disconnected'}</span>
+        </div>
+
         {vacationMode && (
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded-lg">
-            <div className="flex items-center">
-              <AlertCircle className="w-5 h-5 text-yellow-700 mr-3" />
-              <p className="text-yellow-700 font-medium">Vacation Mode Active - All processing paused</p>
-            </div>
+          <div style={styles.alert}>
+            <AlertCircle style={{width: '20px', height: '20px', color: '#F59E0B'}} />
+            <p style={styles.alertText}>Vacation Mode Active - All processing paused</p>
           </div>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <StatCard icon={BarChart3} label="Total Records" value={stats.total} color="#3b82f6" />
-          <StatCard icon={CheckCircle} label="Processed" value={stats.processed} color="#10b981" />
-          <StatCard icon={RefreshCw} label="Remaining" value={stats.remaining} color="#f59e0b" />
-          <StatCard icon={Clock} label="Today" value={stats.processedToday} color="#8b5cf6" />
+        <div style={styles.grid2}>
+          <StatCard icon={BarChart3} label="Total Records" value={stats.total} color="#3B82F6" />
+          <StatCard icon={CheckCircle} label="Processed" value={stats.processed} color="#10B981" />
+          <StatCard icon={RefreshCw} label="Remaining" value={stats.remaining} color="#F59E0B" />
+          <StatCard icon={Clock} label="Today" value={stats.processedToday} color="#8B5CF6" />
         </div>
 
-        {/* Progress Bar */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Progress</span>
-            <span className="text-sm font-medium text-gray-700">{progressPercent}%</span>
+        <div style={styles.card}>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+            <span style={{fontSize: '14px', fontWeight: '500', color: '#374151'}}>Progress</span>
+            <span style={{fontSize: '14px', fontWeight: '500', color: '#374151'}}>{progressPercent}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
+          <div style={styles.progressBar}>
+            <div style={{...styles.progressFill, width: `${progressPercent}%`}} />
           </div>
         </div>
 
-        {/* Schedule Info */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-            <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+        <div style={styles.card}>
+          <h3 style={{fontWeight: '600', color: '#1F2937', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <Calendar style={{width: '20px', height: '20px', color: '#2563EB'}} />
             Schedule
           </h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Last Run:</span>
-              <span className="font-medium text-gray-800">{stats.lastRun || 'Never'}</span>
+          <div style={{fontSize: '14px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
+              <span style={{color: '#6B7280'}}>Last Run:</span>
+              <span style={{fontWeight: '500', color: '#1F2937'}}>
+                {stats.lastRun ? new Date(stats.lastRun).toLocaleString() : 'Never'}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Next Run:</span>
-              <span className="font-medium text-gray-800">{stats.nextRun || 'Not scheduled'}</span>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
+              <span style={{color: '#6B7280'}}>Next Run:</span>
+              <span style={{fontWeight: '500', color: '#1F2937'}}>{stats.nextRun || 'Not scheduled'}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Records/Day:</span>
-              <span className="font-medium text-gray-800">{recordsPerDay}</span>
+            <div style={{display: 'flex', justifyContent: 'space-between'}}>
+              <span style={{color: '#6B7280'}}>Records/Day:</span>
+              <span style={{fontWeight: '500', color: '#1F2937'}}>{recordsPerDay}</span>
             </div>
           </div>
         </div>
 
-        {/* Records Per Day Slider */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+        <div style={styles.card}>
+          <label style={{display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '12px'}}>
             Records Per Day: {recordsPerDay}
           </label>
           <input
@@ -174,16 +502,15 @@ const SalesforceDashboard = () => {
             step="10"
             value={recordsPerDay}
             onChange={(e) => setRecordsPerDay(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            style={styles.slider}
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#6B7280', marginTop: '4px'}}>
             <span>50</span>
             <span>500</span>
           </div>
         </div>
 
-        {/* Toggle Controls */}
-        <div className="space-y-3 mb-6">
+        <div style={{marginBottom: '24px'}}>
           <Toggle
             label="Vacation Mode"
             description="Pause all processing while you're away"
@@ -210,45 +537,49 @@ const SalesforceDashboard = () => {
           />
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 gap-3">
-          <button
-            onClick={handleProcessNow}
-            disabled={isProcessing || vacationMode || stats.remaining === 0}
-            className={`w-full py-4 rounded-lg font-semibold text-white shadow-lg transition-all flex items-center justify-center ${
-              isProcessing || vacationMode || stats.remaining === 0
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95'
-            }`}
-          >
-            {isProcessing ? (
-              <>
-                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Play className="w-5 h-5 mr-2" />
-                Process Next {recordsPerDay} Records Now
-              </>
-            )}
-          </button>
+        <button
+          onClick={handleProcessNow}
+          disabled={isProcessing || vacationMode || stats.remaining === 0 || !isConnected}
+          style={{
+            ...styles.button,
+            ...(isProcessing || vacationMode || stats.remaining === 0 || !isConnected
+              ? styles.buttonDisabled
+              : styles.buttonPrimary)
+          }}
+        >
+          {isProcessing ? (
+            <>
+              <RefreshCw style={{width: '20px', height: '20px', animation: 'spin 1s linear infinite'}} />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Play style={{width: '20px', height: '20px'}} />
+              Process Next {recordsPerDay} Records Now
+            </>
+          )}
+        </button>
 
-          <button
-            onClick={handleReset}
-            className="w-full py-3 rounded-lg font-semibold text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center"
-          >
-            <RefreshCw className="w-5 h-5 mr-2" />
-            Reset All Records
-          </button>
-        </div>
+        <button
+          onClick={handleReset}
+          disabled={!isConnected}
+          style={{...styles.button, ...styles.buttonSecondary, opacity: !isConnected ? 0.5 : 1}}
+        >
+          <RefreshCw style={{width: '20px', height: '20px'}} />
+          Reset All Records
+        </button>
 
-        {/* Footer Info */}
-        <div className="mt-8 text-center text-sm text-gray-600">
+        <div style={{marginTop: '32px', textAlign: 'center', fontSize: '13px', color: '#6B7280'}}>
           <p>Connected to Google Sheets</p>
-          <p className="mt-1">Tasks sync to Salesforce via Zapier</p>
+          <p style={{marginTop: '4px'}}>Tasks sync to Salesforce via Zapier</p>
         </div>
       </div>
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

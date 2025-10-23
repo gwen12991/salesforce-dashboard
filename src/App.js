@@ -12,6 +12,8 @@ const SalesforceDashboard = () => {
   const [skipHolidays, setSkipHolidays] = useState(true);
   const [autoRun, setAutoRun] = useState(true);
   const [recordsPerDay, setRecordsPerDay] = useState(150);
+  const [emailSubject, setEmailSubject] = useState('Email');
+  const [emailBody, setEmailBody] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
@@ -258,6 +260,8 @@ const SalesforceDashboard = () => {
       setSkipHolidays(settingsData.skipHolidays);
       setAutoRun(settingsData.autoRun);
       setRecordsPerDay(settingsData.recordsPerDay);
+      setEmailSubject(settingsData.emailSubject || 'Email');
+      setEmailBody(settingsData.emailBody || '');
       
       setIsConnected(true);
     } catch (error) {
@@ -304,10 +308,12 @@ const SalesforceDashboard = () => {
         skipWeekends,
         skipHolidays,
         autoRun,
-        recordsPerDay
+        recordsPerDay,
+        emailSubject,
+        emailBody
       });
     }
-  }, [vacationMode, skipWeekends, skipHolidays, autoRun, recordsPerDay]);
+  }, [vacationMode, skipWeekends, skipHolidays, autoRun, recordsPerDay, emailSubject, emailBody]);
 
   const handleConnect = () => {
     if (apiUrl.trim()) {
@@ -328,13 +334,21 @@ const SalesforceDashboard = () => {
       try {
         response = await fetch(`${apiUrl}?action=processNow`, {
           method: 'POST',
-          body: JSON.stringify({ recordsPerDay })
+          body: JSON.stringify({ 
+            recordsPerDay,
+            emailSubject,
+            emailBody
+          })
         });
       } catch (corsError) {
         const proxyUrl = 'https://corsproxy.io/?';
         response = await fetch(`${proxyUrl}${encodeURIComponent(apiUrl + '?action=processNow')}`, {
           method: 'POST',
-          body: JSON.stringify({ recordsPerDay })
+          body: JSON.stringify({ 
+            recordsPerDay,
+            emailSubject,
+            emailBody
+          })
         });
       }
       
@@ -550,6 +564,38 @@ const SalesforceDashboard = () => {
             <span>50</span>
             <span>500</span>
           </div>
+        </div>
+
+        <div style={styles.card}>
+          <label style={{display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px'}}>
+            Email Subject (for campaigns)
+          </label>
+          <input
+            type="text"
+            value={emailSubject}
+            onChange={(e) => setEmailSubject(e.target.value)}
+            placeholder="Email"
+            style={styles.input}
+          />
+          <p style={{fontSize: '12px', color: '#6B7280', marginTop: '4px'}}>
+            Default: "Email" - Change this for specific campaigns
+          </p>
+        </div>
+
+        <div style={styles.card}>
+          <label style={{display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px'}}>
+            Email Body (optional)
+          </label>
+          <textarea
+            value={emailBody}
+            onChange={(e) => setEmailBody(e.target.value)}
+            placeholder="Leave blank or add campaign-specific content..."
+            rows="3"
+            style={{...styles.input, resize: 'vertical', fontFamily: 'inherit'}}
+          />
+          <p style={{fontSize: '12px', color: '#6B7280', marginTop: '4px'}}>
+            Optional - Can be left blank
+          </p>
         </div>
 
         <div style={{marginBottom: '24px'}}>
